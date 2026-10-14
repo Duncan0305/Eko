@@ -1,6 +1,6 @@
-# EKO · Biblioteca musical local
+# EKO · Reproductor musical local
 
-Aplicación nativa Android en Kotlin y Jetpack Compose. Fase 1: selecciona una carpeta, descubre audio real y organiza sus metadatos. **No incluye reproducción.**
+Aplicación nativa Android en Kotlin y Jetpack Compose. Selecciona una carpeta, organiza su audio real y lo reproduce con controles propios y del sistema, incluso en segundo plano. Todo funciona sin conexión.
 
 ## Abrir y ejecutar
 
@@ -34,8 +34,13 @@ En este equipo también quedó disponible el emulador **Eko_API_35** en Device M
 - Progreso con archivos revisados y canciones encontradas, cancelación, actualización manual, información de canción y ajustes de carpeta.
 - Estados sin carpeta, vacío, escaneando, sin coincidencias y acceso perdido; transiciones breves y movimiento reducido según Android.
 - Índice Room persistente. Cada escaneo escribe lotes de hasta 50 filas en una generación temporal. Solo se publica al completar la exploración: cancelar o fallar conserva el índice anterior. Una actualización exitosa elimina referencias a archivos borrados.
+- Un único ExoPlayer alojado en `MediaSessionService`, separado de la UI y sincronizado mediante `MediaController` + `StateFlow`.
+- Reproducción, pausa, búsqueda temporal, anterior, siguiente, cola, modo aleatorio, repetir una y repetir todo.
+- Minirreproductor persistente dentro de la navegación y reproductor completo adaptable, con cola consultable y carátula protagonista.
+- Reproducción en segundo plano, audio focus, pausa al desconectar la salida de audio y controles de notificación, pantalla bloqueada, auriculares y Bluetooth compatibles.
+- Recuperación por archivo ilegible: se informa el error y, si hay otra pista disponible, la cola continúa.
 
-No se solicitan permisos de almacenamiento global, audio multimedia ni internet. No hay servidores, cuentas, streaming, favoritos, playlists o dependencias de reproducción.
+No se solicitan permisos de almacenamiento global, audio multimedia ni internet. Android 13 o posterior solicita notificaciones al iniciar la primera reproducción; rechazarlo no bloquea el audio. No hay servidores, cuentas, streaming, favoritos ni playlists personalizadas.
 
 ## Estructura y responsabilidades
 
@@ -49,15 +54,16 @@ app/src/main/java/com/musicplayer/
 │   └── repository/               Permisos, escaneo e índice
 ├── domain/                      Metadatos, formatos, búsqueda y orden
 ├── scanner/                     Exploración, MediaMetadataRetriever y miniaturas
+├── playback/                    ExoPlayer, MediaSessionService, controlador y estado
 ├── viewmodel/                   Estado StateFlow y operaciones cancelables
 └── ui/
     ├── theme/                   Color.kt, Theme.kt, Type.kt, Motion.kt
-    ├── components/              Marca, iconos, carátula, fila, búsqueda y estados
-    ├── screens/                 Bienvenida, biblioteca, ajustes e información
+    ├── components/              Marca, iconos, filas, minirreproductor y controles
+    ├── screens/                 Bienvenida, biblioteca, reproductor, ajustes e información
     └── navigation/              Navigation Compose
 ```
 
-La UI recibe estado y callbacks; no lee archivos. Para la Fase 2 se puede añadir un controlador de reproducción separado que reciba `Song.uri`, sin introducir el motor en el escáner ni en los componentes.
+La UI recibe estado y callbacks; no lee archivos ni controla ExoPlayer directamente. `PlaybackController` traduce el estado de la sesión multimedia para Compose y `PlaybackService` conserva el único motor fuera de la navegación.
 
 ## Diseño e integración de skills
 
@@ -69,6 +75,7 @@ Se aplicaron `frontend-design` y `motion-design` tras confirmar el alcance compl
 - Bienvenida dividida a partir de 700 dp, contenido con ancho máximo y desplazamiento para pantallas pequeñas/texto grande.
 - Acciones con áreas táctiles Material, etiquetas accesibles y errores explicados con texto.
 - Duraciones de 160/240 ms. Android controla la escala temporal de Compose; con animaciones desactivadas se omiten desplazamientos, fades y progreso indeterminado animado.
+- El reproductor utiliza transiciones de 320 ms para la entrada y el cambio de carátula, feedback de presión de 140 ms y una composición compacta específica para pantallas de poca altura.
 - El selector de carpetas pertenece a Android: respeta su apariencia y restricciones del sistema.
 
 ## Verificación y límites
@@ -81,5 +88,7 @@ Consulta `docs/VERIFICATION.md` para resultados, capturas y matriz de pruebas. L
 - Si un directorio no puede enumerarse, se conserva el índice anterior para no confundir un fallo con una carpeta vacía.
 - Miniaturas de hasta 384 px, presupuesto de aproximadamente 96 MiB y limpieza de archivos sin referencias. Se descartan carátulas comprimidas mayores de 16 MiB; MediaMetadataRetriever puede asignar transitoriamente el bloque incrustado antes de conocer su tamaño.
 - No se ha medido FPS en hardware físico ni se garantiza compatibilidad con todos los proveedores SAF o códecs.
+- El servicio conserva la sesión durante la reproducción y las pausas recientes. Una detención forzada de la app por el usuario borra la sesión activa; no se implementó reanudación automática tras *force stop*.
+- Las llamadas, controles Bluetooth/auriculares y sesiones de muchas horas dependen de hardware real y deben verificarse en los dispositivos objetivo.
 
 Referencias de compatibilidad: [AGP 9.4](https://developer.android.com/build/releases/agp-9-4-0-release-notes), [versiones AndroidX](https://developer.android.com/jetpack/androidx/versions), [Storage Access Framework](https://developer.android.com/training/data-storage/shared/documents-files), [Coil](https://coil-kt.github.io/coil/getting_started/). Los artefactos se comprobaron también en Google Maven y Maven Central.

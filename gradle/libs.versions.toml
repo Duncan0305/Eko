@@ -12,6 +12,7 @@ datastore = "1.2.1"
 documentfile = "1.1.0"
 coil = "3.6.3"
 coroutines = "1.11.0"
+media3 = "1.11.0"
 
 [libraries]
 core = { module = "androidx.core:core-ktx", version.ref = "core" }
@@ -33,6 +34,8 @@ documentfile = { module = "androidx.documentfile:documentfile", version.ref = "d
 coil = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3" }
+media3-session = { module = "androidx.media3:media3-session", version.ref = "media3" }
 junit = { module = "junit:junit", version = "4.13.2" }
 robolectric = { module = "org.robolectric:robolectric", version = "4.17" }
 

@@ -2,6 +2,9 @@ package com.musicplayer
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -21,12 +24,18 @@ class MainActivity : ComponentActivity() {
         if (result.resultCode == RESULT_OK) result.data?.data?.let(viewModel::selectFolder)
         // Dismissal is intentionally a no-op, including while changing folders.
     }
+    private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT))
-        setContent { EkoTheme { EkoNavigation(viewModel, ::chooseFolder) } }
+        val application = application as EkoApplication
+        setContent {
+            EkoTheme {
+                EkoNavigation(viewModel, application.playbackController, ::chooseFolder, ::requestNotificationPermission)
+            }
+        }
     }
 
     override fun onResume() {
@@ -41,5 +50,12 @@ class MainActivity : ComponentActivity() {
                 putExtra(Intent.EXTRA_LOCAL_ONLY, true)
             })
         } catch (_: ActivityNotFoundException) { viewModel.pickerUnavailable() }
+    }
+
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
 }

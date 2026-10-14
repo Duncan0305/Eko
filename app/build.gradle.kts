@@ -11,8 +11,8 @@ android {
         applicationId = "com.musicplayer.eko"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures { compose = true }
@@ -44,6 +44,8 @@ dependencies {
     implementation(libs.documentfile)
     implementation(libs.coil)
     implementation(libs.coroutines)
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.session)
     debugImplementation(libs.compose.tooling)
     debugImplementation(libs.compose.test.manifest)
     testImplementation(libs.junit)

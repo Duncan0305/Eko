@@ -28,7 +28,7 @@ fun SettingsScreen(state: LibraryUiState, onBack: () -> Unit, onChangeFolder: ()
             Text("Hecho para estar contigo", style = MaterialTheme.typography.titleLarge)
             Text("Tu biblioteca funciona sin conexión. No hay cuentas, servidores ni recopilación de tu música.",
                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("EKO · Versión 0.1.0\nBiblioteca local · Fase 1", style = MaterialTheme.typography.bodySmall,
+            Text("EKO · Versión 0.2.0\nReproductor local · Fase 2", style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }

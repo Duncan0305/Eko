@@ -25,7 +25,8 @@ import com.musicplayer.viewmodel.LibraryUiState
 @Composable
 fun LibraryScreen(state: LibraryUiState, onQuery: (String) -> Unit, onSort: (SongSort) -> Unit,
                   onChangeFolder: () -> Unit, onRefresh: () -> Unit, onCancel: () -> Unit,
-                  onSettings: () -> Unit, onDetails: (Song) -> Unit, reducedMotion: Boolean) {
+                  onSettings: () -> Unit, onPlay: (Song) -> Unit, onDetails: (Song) -> Unit,
+                  currentSongId: String?, reducedMotion: Boolean) {
     var sortMenu by remember { mutableStateOf(false) }
     Box(Modifier.fillMaxSize().safeDrawingPadding(), contentAlignment = Alignment.TopCenter) {
         LazyColumn(Modifier.widthIn(max = 840.dp).fillMaxSize(),
@@ -110,7 +111,7 @@ fun LibraryScreen(state: LibraryUiState, onQuery: (String) -> Unit, onSort: (Son
                 }
             }
             if (!state.accessError) items(state.songs, key = { it.id }, contentType = { "song" }) { song ->
-                SongItem(song, onDetails,
+                SongItem(song, song.id == currentSongId, onPlay, onDetails,
                     if (reducedMotion) Modifier else Modifier.animateItem(
                         fadeInSpec = tween(EkoMotion.Enter), placementSpec = tween(EkoMotion.Enter), fadeOutSpec = tween(EkoMotion.Exit)))
             }

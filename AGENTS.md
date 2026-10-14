@@ -6,17 +6,17 @@ Este archivo lo carga OpenCode automáticamente en cada sesión. Mantén aquí s
 
 - Reproductor de música **local** para Android: Kotlin + Jetpack Compose + Material 3 personalizado.
 - Arquitectura **MVVM + Repository**, estado con **StateFlow**, asincronía con **Coroutines**, preferencias con **DataStore**, índice con **Room**, lectura de archivos por **SAF** (`ACTION_OPEN_DOCUMENT_TREE`) y **DocumentFile**, metadatos con **MediaMetadataRetriever**, carátulas con **Coil**.
-- **Fase 1 (completa):** seleccionar una carpeta, escanear audio real, extraer metadatos y mostrar la biblioteca (búsqueda, ordenamiento, persistencia). **NO hay reproducción de audio.**
+- **Fase 1 (completa):** seleccionar una carpeta, escanear audio real, extraer metadatos y mostrar la biblioteca (búsqueda, ordenamiento, persistencia).
 - **100% offline**: sin backend, cuentas, streaming ni permisos de almacenamiento global/internet.
-- **Fase 2 (pendiente):** integrar el motor de reproducción (Media3/ExoPlayer). Punto de integración previsto: un `PlaybackController` que reciba `Song.uri`, sin meter el motor en el escáner ni en los componentes Compose.
+- **Fase 2 (completa):** Media3 ExoPlayer + MediaSessionService, `PlaybackController`, cola, aleatorio/repetición, minirreproductor, pantalla completa y controles del sistema/segundo plano.
 
 El prompt y los requisitos originales de la Fase 1 están en `docs/PHASE-1-PROMPT.md`. El `README.md` describe funciones, estructura y límites en detalle.
 
 ## Identificadores y versiones
 
-- `namespace` / paquete `R` = `com.musicplayer` · `applicationId` = `com.musicplayer.eko` · `versionName` 0.1.0.
+- `namespace` / paquete `R` = `com.musicplayer` · `applicationId` = `com.musicplayer.eko` · `versionName` 0.2.0.
 - `minSdk` 26 · `compileSdk`/`targetSdk` 37 · Java 17 (source/target).
-- Dependencias fijadas en `gradle/libs.versions.toml`: AGP **9.4.1**, Gradle **9.6.0**, Kotlin **2.4.21**, KSP **2.3.12**, Compose BOM **2026.09.00**, Room **2.8.5**, DataStore **1.2.1**, DocumentFile **1.1.0**, Coil **3.6.3**, Navigation **2.10.2**, Coroutines **1.11.0**.
+- Dependencias fijadas en `gradle/libs.versions.toml`: AGP **9.4.1**, Gradle **9.6.0**, Kotlin **2.4.21**, KSP **2.3.12**, Compose BOM **2026.09.00**, Room **2.8.5**, DataStore **1.2.1**, DocumentFile **1.1.0**, Coil **3.6.3**, Navigation **2.10.2**, Coroutines **1.11.0**, Media3 **1.11.0**.
 - Requiere **Android Studio Rabbit 1 (2026.2.1)** o superior. **Quail 2 (2026.1.2) NO soporta AGP 9.4** → síntoma: no aparece el botón verde *Run*.
 - **Gradle JDK: 21.** Build Tools 36.0.0 y Platform 37 instalados.
 
@@ -49,11 +49,12 @@ app/src/main/java/com/musicplayer/
 │   └── repository/          MusicRepository: permisos, escaneo e índice
 ├── domain/                  Lógica pura y testeable: MetadataMapper, LibraryOrganizer, MusicFiles
 ├── scanner/                 MusicScanner, MetadataExtractor, ArtworkCache
+├── playback/                PlaybackService, PlaybackController, estado y MediaItem
 ├── viewmodel/               LibraryViewModel: estado StateFlow y operaciones cancelables
 └── ui/
     ├── theme/               Color.kt, Theme.kt, Type.kt, Motion.kt
-    ├── components/          Marca (BrandHeader, EkoIcon), SongItem, SongArtwork, SearchBar, FolderHeader, LibraryState
-    ├── screens/             WelcomeScreen, LibraryScreen, SettingsScreen, SongDetailsDialog
+    ├── components/          Marca, SongItem, SongArtwork, MiniPlayer, PlayerControls, búsqueda y estados
+    ├── screens/             WelcomeScreen, LibraryScreen, PlayerScreen, SettingsScreen, SongDetailsDialog
     └── navigation/          EkoNavigation (Navigation Compose)
 ```
 
@@ -61,6 +62,7 @@ Reglas de arquitectura:
 - **La UI no lee archivos.** Recibe estado + callbacks. Nada de acceso a disco en composables.
 - El **escaneo vive en `LibraryViewModel`**: sobrevive cambios de configuración; se cancela al terminar el proceso.
 - **Room** guarda solo metadatos/índice (nunca archivos ni imágenes completas). Cada escaneo escribe en una **generación temporal** y solo publica al completar; cancelar/fallar conserva el índice anterior.
+- La UI controla la reproducción solo mediante `PlaybackController`; la única instancia de ExoPlayer pertenece a `PlaybackService`.
 - Mantener la lógica de negocio en `domain/` (pura) para poder testearla.
 
 ## Convenciones
@@ -84,7 +86,7 @@ Reglas de arquitectura:
 
 ## Verificación y errores conocidos
 
-- Verificado en limpio (`:app:clean :app:lintDebug` y `:app:testDebugUnitTest`): **BUILD SUCCESSFUL**, **24 tests / 0 fallos**, lint sin errores (con `lint { abortOnError = true }`). Un crash de lint en `scanner/MetadataExtractor.kt` reportado en su momento **NO se reproduce**; re-verifica antes de darlo por hecho.
+- Verificado (`:app:assembleDebug`, `:app:lintDebug` y `:app:testDebugUnitTest`): **BUILD SUCCESSFUL**, **29 tests / 0 fallos**, lint sin errores. Reproducción y segundo plano comprobados en `Eko_API_35`.
 - **No hay `androidTest`**; solo tests JVM/Robolectric en `app/src/test` (`EkoScreensTest`, `MusicScannerTest`, `MetadataMapperTest`, `LibraryOrganizerTest`, `MusicDatabaseTest`, `MusicRepositoryTest`).
 - Resultados, matriz de pruebas y capturas en `docs/VERIFICATION.md`.
 - Pendiente de confirmación visual: nuevo ícono en bienvenida/encabezado en el dispositivo físico.
@@ -94,4 +96,4 @@ Reglas de arquitectura:
 1. Leer `README.md` (funciones, estructura, límites) y, si hace falta el alcance, `docs/PHASE-1-PROMPT.md`.
 2. Comprobar `git status` antes de tocar nada; el repo no es de varios colaboradores, pero evita sobrescribir trabajo.
 3. Tras cambios de código: compilar (`:app:assembleDebug`) y, cuando aplique, correr `:app:testDebugUnitTest`. Instalar en `R5GL107YFYA` para validar en hardware.
-4. No avanzar a reproducción (Fase 2) sin que se pida explícitamente.
+4. No avanzar a funciones posteriores (ecualizador, letras, playlists, streaming o nube) sin que se pidan explícitamente.
