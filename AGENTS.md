@@ -82,11 +82,11 @@ Reglas de arquitectura:
 - Identidad git local: `Duncan` / `adunroga03@gmail.com`. Credenciales vía Git Credential Manager (usuario **Duncan0305**); no hace falta token manual.
 - El `.gitignore` excluye `.gradle/`, `.kotlin/`, `.idea/`, `**/build/`, `local.properties`, `*.iml`, `*.log`, `.tools/`, keystores. **Nunca** commitear `local.properties`, `build/` ni logs.
 
-## Errores conocidos y pendientes
+## Verificación y errores conocidos
 
-- **Lint crashea** (`lintAnalyzeDebug`) en `scanner/MetadataExtractor.kt`; con `lint { abortOnError = true }` haciendo fallar `lint`/`check`. Pendiente de investigar.
+- Verificado en limpio (`:app:clean :app:lintDebug` y `:app:testDebugUnitTest`): **BUILD SUCCESSFUL**, **24 tests / 0 fallos**, lint sin errores (con `lint { abortOnError = true }`). Un crash de lint en `scanner/MetadataExtractor.kt` reportado en su momento **NO se reproduce**; re-verifica antes de darlo por hecho.
 - **No hay `androidTest`**; solo tests JVM/Robolectric en `app/src/test` (`EkoScreensTest`, `MusicScannerTest`, `MetadataMapperTest`, `LibraryOrganizerTest`, `MusicDatabaseTest`, `MusicRepositoryTest`).
-- El `README.md` referencia `docs/VERIFICATION.md`, que **no existe** todavía. Crearlo o corregir el enlace.
+- Resultados, matriz de pruebas y capturas en `docs/VERIFICATION.md`.
 - Pendiente de confirmación visual: nuevo ícono en bienvenida/encabezado en el dispositivo físico.
 
 ## Cómo empezar una sesión
