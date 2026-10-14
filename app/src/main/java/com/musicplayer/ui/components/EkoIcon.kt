@@ -24,7 +24,8 @@ import com.musicplayer.ui.theme.*
 
 enum class Symbol {
     Search, Folder, Refresh, Sort, More, Close, Arrow, Back, Info, Check, Settings, Music,
-    Play, Pause, Next, Previous, Shuffle, Repeat, RepeatOne, Queue
+    Play, Pause, Next, Previous, Shuffle, Repeat, RepeatOne, Queue,
+    Home, Library, Album, Artist, Genre
 }
 
 @Composable
@@ -81,6 +82,29 @@ fun EkoIcon(symbol: Symbol, modifier: Modifier = Modifier, description: String? 
                         android.graphics.Paint().apply { color = tint.toArgb(); textSize = 8f; isFakeBoldText = true })
                 }
                 Symbol.Queue -> { line(4f,6f,16f,6f); line(4f,12f,16f,12f); line(4f,18f,12f,18f); drawCircle(tint, 2f, Offset(19f,18f)); line(19f,13f,19f,18f) }
+                Symbol.Home -> {
+                    val path = Path().apply { moveTo(3.5f,11f); lineTo(12f,4f); lineTo(20.5f,11f); lineTo(20.5f,20f); lineTo(14.5f,20f); lineTo(14.5f,14f); lineTo(9.5f,14f); lineTo(9.5f,20f); lineTo(3.5f,20f); close() }
+                    drawPath(path, tint, style = Stroke(1.7f, join = StrokeJoin.Round))
+                }
+                Symbol.Library -> {
+                    drawRoundRect(tint, Offset(3f,4f), Size(5f,16f), CornerRadius(1.5f), style = Stroke(1.7f))
+                    drawRoundRect(tint, Offset(10f,4f), Size(5f,16f), CornerRadius(1.5f), style = Stroke(1.7f))
+                    drawRoundRect(tint, Offset(17f,4f), Size(4f,16f), CornerRadius(1.5f), style = Stroke(1.7f))
+                }
+                Symbol.Album -> {
+                    drawRoundRect(tint, Offset(3f,3f), Size(18f,18f), CornerRadius(3f), style = Stroke(1.7f))
+                    drawCircle(tint, 5f, Offset(12f,12f), style = Stroke(1.7f))
+                    drawCircle(tint, 1.5f, Offset(12f,12f))
+                }
+                Symbol.Artist -> {
+                    drawCircle(tint, 4f, Offset(12f,8f), style = Stroke(1.7f))
+                    drawArc(tint, 198f, 144f, false, Offset(4f,12f), Size(16f,10f), style = Stroke(1.7f, cap = StrokeCap.Round))
+                }
+                Symbol.Genre -> {
+                    listOf(7f to 8f, 12f to 14f, 17f to 5f).forEach { (x, top) ->
+                        drawRoundRect(tint, Offset(x - 1.5f, top), Size(3f, 19f - top), CornerRadius(1.5f))
+                    }
+                }
             }
         }
     }

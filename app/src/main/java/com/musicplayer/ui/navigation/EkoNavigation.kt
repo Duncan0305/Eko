@@ -14,7 +14,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.*
 import com.musicplayer.data.model.Song
 import com.musicplayer.playback.PlaybackController
-import com.musicplayer.ui.components.MiniPlayer
+import com.musicplayer.ui.components.*
 import com.musicplayer.ui.screens.*
 import com.musicplayer.ui.theme.*
 import com.musicplayer.viewmodel.LibraryViewModel
@@ -43,9 +43,21 @@ fun EkoNavigation(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
-            if (playback.currentSong != null && route != "player" && route != "welcome") {
-                MiniPlayer(playback, { nav.navigate("player") { launchSingleTop = true } },
-                    playbackController::togglePlayPause, playbackController::next, reducedMotion)
+            val mainDestination = MainDestination.entries.firstOrNull { it.route == route }
+            if (mainDestination != null) {
+                Column {
+                    if (playback.currentSong != null) {
+                        MiniPlayer(playback, { nav.navigate("player") { launchSingleTop = true } },
+                            playbackController::togglePlayPause, playbackController::next, reducedMotion)
+                    }
+                    EkoBottomNavigation(mainDestination, { destination ->
+                        nav.navigate(destination.route) {
+                            popUpTo(nav.graph.id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }, reducedMotion)
+                }
             }
         },
         contentWindowInsets = WindowInsets(0),
@@ -56,10 +68,10 @@ fun EkoNavigation(
                     if (reducedMotion) Text("Abriendo tu biblioteca…") else CircularProgressIndicator()
                 }
             } else {
-                val destination = if (state.folder == null) "welcome" else "library"
+                val destination = if (state.folder == null) "welcome" else "home"
                 LaunchedEffect(destination, route) {
                     val mustNavigate = (destination == "welcome" && route != "welcome") ||
-                        (destination == "library" && route == "welcome")
+                        (destination == "home" && route == "welcome")
                     if (mustNavigate) nav.navigate(destination) {
                         popUpTo(nav.graph.id) { inclusive = false }
                         launchSingleTop = true
@@ -69,16 +81,19 @@ fun EkoNavigation(
                     enterTransition = { fadeIn(tween(if (reducedMotion) 0 else EkoMotion.Enter)) },
                     exitTransition = { fadeOut(tween(if (reducedMotion) 0 else EkoMotion.Exit)) }) {
                     composable("welcome") { WelcomeScreen(state.selecting, onSelectFolder) }
+                    composable("home") {
+                        HomeScreen(state) { nav.navigate("library") { launchSingleTop = true } }
+                    }
                     composable("library") {
                         LibraryScreen(state, viewModel::search, viewModel::sort, onSelectFolder,
-                            viewModel::refresh, viewModel::cancelScan, { nav.navigate("settings") },
+                            viewModel::refresh, viewModel::cancelScan,
                             { song ->
                                 onPlaybackStarted()
                                 playbackController.playQueue(state.songs, song)
                             },
                             { detail = it }, playback.currentSong?.id, reducedMotion)
                     }
-                    composable("settings") { SettingsScreen(state, { nav.popBackStack() }, onSelectFolder) }
+                    composable("settings") { SettingsScreen(state, onSelectFolder) }
                     composable(
                         "player",
                         enterTransition = { fadeIn(tween(if (reducedMotion) 0 else EkoMotion.Player)) + scaleIn(tween(if (reducedMotion) 0 else EkoMotion.Player), initialScale = 0.96f) },

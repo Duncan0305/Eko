@@ -10,9 +10,11 @@ object EkoMotion {
     const val Enter = 240
     const val Exit = 160
     const val Player = 320
+    const val WelcomePulse = 2_400
+    const val WelcomeOrbit = 12_000
 }
 
-/** Integration point: motion-design. No infinite decorative animations or blur layers. */
+/** Centraliza el respeto a la preferencia de animaciones reducidas del sistema. */
 @Composable
 fun rememberReducedMotion(): Boolean {
     val resolver = LocalContext.current.contentResolver

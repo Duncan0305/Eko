@@ -43,7 +43,7 @@ class EkoScreensTest {
             Song("$i", Uri.parse("content://test/$i"), title, "Artista de prueba ${i+1}", "Álbum de prueba", 180000L + i*17000, null, null, null, "$i.flac")
         }
         val state = LibraryUiState(starting = false, folder = MusicFolder("content://test/tree", "Mi colección"), songs = songs, totalSongs = songs.size)
-        compose.setContent { EkoTheme { Surface { LibraryScreen(state, { query = it }, {}, {}, {}, {}, {},
+        compose.setContent { EkoTheme { Surface { LibraryScreen(state, { query = it }, {}, {}, {}, {},
             { selected = it }, {}, null, true) } } }
         compose.onNodeWithText("Canción, artista o álbum").performTextInput("órbita")
         assertEquals("órbita", query)
@@ -55,7 +55,7 @@ class EkoScreensTest {
     @Test fun revokedPermissionOffersRecovery() {
         var selected = false
         val state = LibraryUiState(starting = false, folder = MusicFolder("content://test/tree", "Música"), accessError = true)
-        compose.setContent { EkoTheme { Surface { LibraryScreen(state, {}, {}, { selected = true }, {}, {}, {}, {}, {}, null, true) } } }
+        compose.setContent { EkoTheme { Surface { LibraryScreen(state, {}, {}, { selected = true }, {}, {}, {}, {}, null, true) } } }
         compose.onNodeWithText("Seleccionar carpeta").performScrollTo().performClick()
         assertTrue(selected)
         capture("access-error")
@@ -65,7 +65,7 @@ class EkoScreensTest {
         var cancelled = false
         val state = LibraryUiState(starting = false, folder = MusicFolder("content://test/tree", "Música"), scanning = true,
             progress = ScanProgress(40, 12, 1))
-        compose.setContent { EkoTheme { Surface { LibraryScreen(state, {}, {}, {}, {}, { cancelled = true }, {}, {}, {}, null, true) } } }
+        compose.setContent { EkoTheme { Surface { LibraryScreen(state, {}, {}, {}, {}, { cancelled = true }, {}, {}, null, true) } } }
         compose.onNodeWithText("Cancelar").performScrollTo().performClick()
         assertTrue(cancelled)
     }

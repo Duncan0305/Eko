@@ -12,14 +12,13 @@ import com.musicplayer.ui.components.*
 import com.musicplayer.viewmodel.LibraryUiState
 
 @Composable
-fun SettingsScreen(state: LibraryUiState, onBack: () -> Unit, onChangeFolder: () -> Unit) {
+fun SettingsScreen(state: LibraryUiState, onChangeFolder: () -> Unit) {
     Box(Modifier.fillMaxSize().safeDrawingPadding(), contentAlignment = Alignment.TopCenter) {
         Column(Modifier.widthIn(max = 720.dp).fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) { EkoIcon(Symbol.Back, description = "Volver a la biblioteca") }
-                Text("Ajustes", style = MaterialTheme.typography.headlineSmall)
-            }
+            BrandHeader()
+            Text("AJUSTES", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
+            Text("Ajustes", style = MaterialTheme.typography.headlineLarge)
             Text("Tu biblioteca", style = MaterialTheme.typography.titleLarge)
             Text("EKO solo accede a la carpeta que seleccionas y a sus subcarpetas. Tus archivos permanecen en su lugar.",
                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
