@@ -53,10 +53,17 @@ app/src/main/java/com/musicplayer/
 ├── viewmodel/               LibraryViewModel: estado StateFlow y operaciones cancelables
 └── ui/
     ├── theme/               Color.kt, Theme.kt, Type.kt, Motion.kt
-    ├── components/          Marca, SongItem, SongArtwork, MiniPlayer, PlayerControls, búsqueda y estados
-    ├── screens/             WelcomeScreen, LibraryScreen, PlayerScreen, SettingsScreen, SongDetailsDialog
+    ├── components/          Marca (BrandHeader, EkoIcon), EkoBottomNavigation, LibraryTabs,
+    │                        SongItem, SongArtwork, MiniPlayer, PlayerControls, SearchBar, FolderHeader, LibraryState
+    ├── screens/             WelcomeScreen, HomeScreen, LibraryScreen, PlayerScreen, SettingsScreen, SongDetailsDialog
     └── navigation/          EkoNavigation (Navigation Compose)
 ```
+
+Navegación:
+- Rutas: `welcome` (sin carpeta), `home`, `library`, `settings`, `player`.
+- Destinos principales en la barra inferior: **Inicio** (`home`), **Biblioteca** (`library`), **Ajustes** (`settings`) — enum `MainDestination` en `EkoBottomNavigation.kt`.
+- La barra inferior es flotante y solo aparece en los destinos principales; el **minirreproductor** se apila encima cuando hay canción activa.
+- Dentro de Biblioteca, las secciones son un enum `LibrarySection` en `LibraryTabs.kt`: **Canciones, Álbumes, Artistas, Géneros, Carpetas**. Solo **Canciones** está implementada; el resto muestra `LibrarySectionPlaceholder` ("preparada para la siguiente etapa").
 
 Reglas de arquitectura:
 - **La UI no lee archivos.** Recibe estado + callbacks. Nada de acceso a disco en composables.
