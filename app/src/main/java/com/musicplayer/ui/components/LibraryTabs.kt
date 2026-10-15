@@ -1,7 +1,6 @@
 package com.musicplayer.ui.components
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
@@ -13,7 +12,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.musicplayer.ui.theme.*
@@ -35,8 +33,8 @@ fun LibraryTabs(
 ) {
     LazyRow(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp),
     ) {
         items(LibrarySection.entries, key = { it.name }) { section ->
             val active = section == selected
@@ -50,13 +48,8 @@ fun LibraryTabs(
                 tween(if (reducedMotion) 0 else EkoMotion.Enter),
                 label = "Color ${section.label}",
             )
-            val scale by animateFloatAsState(
-                if (active && !reducedMotion) 1.02f else 1f,
-                tween(if (reducedMotion) 0 else EkoMotion.Press),
-                label = "Escala ${section.label}",
-            )
             Surface(
-                modifier = Modifier.scale(scale).selectable(
+                modifier = Modifier.selectable(
                     selected = active,
                     role = Role.Tab,
                     onClick = { onSelect(section) },

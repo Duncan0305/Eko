@@ -25,7 +25,7 @@ import com.musicplayer.ui.theme.*
 enum class Symbol {
     Search, Folder, Refresh, Sort, More, Close, Arrow, Back, Info, Check, Settings, Music,
     Play, Pause, Next, Previous, Shuffle, Repeat, RepeatOne, Queue,
-    Home, Library, Album, Artist, Genre
+    Home, Library, Album, Artist, Genre, Stats
 }
 
 @Composable
@@ -104,6 +104,11 @@ fun EkoIcon(symbol: Symbol, modifier: Modifier = Modifier, description: String? 
                     listOf(7f to 8f, 12f to 14f, 17f to 5f).forEach { (x, top) ->
                         drawRoundRect(tint, Offset(x - 1.5f, top), Size(3f, 19f - top), CornerRadius(1.5f))
                     }
+                }
+                Symbol.Stats -> {
+                    drawRoundRect(tint, Offset(4f, 13f), Size(3.6f, 8f), CornerRadius(1.6f))
+                    drawRoundRect(tint, Offset(10.2f, 8.5f), Size(3.6f, 12.5f), CornerRadius(1.6f))
+                    drawRoundRect(tint, Offset(16.4f, 4f), Size(3.6f, 17f), CornerRadius(1.6f))
                 }
             }
         }

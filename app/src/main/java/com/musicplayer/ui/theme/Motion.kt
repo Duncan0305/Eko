@@ -9,7 +9,10 @@ object EkoMotion {
     const val Press = 140
     const val Enter = 240
     const val Exit = 160
+    const val SectionEnter = 280
+    const val SectionStagger = 45
     const val Player = 320
+    const val PlayerDismiss = 240
     const val WelcomePulse = 2_400
     const val WelcomeOrbit = 12_000
 }

@@ -2,15 +2,28 @@ package com.musicplayer.ui
 
 import android.graphics.Bitmap
 import android.net.Uri
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import com.musicplayer.data.model.*
+import com.musicplayer.domain.ListeningInsights
 import com.musicplayer.scanner.ScanProgress
 import com.musicplayer.playback.PlaybackState
 import com.musicplayer.playback.RepeatMode
+import com.musicplayer.ui.components.MiniPlayer
 import com.musicplayer.ui.screens.*
+import com.musicplayer.ui.theme.EkoBackground
+import com.musicplayer.ui.theme.EkoBlue
+import com.musicplayer.ui.theme.EkoGreen
 import com.musicplayer.ui.theme.EkoTheme
 import com.musicplayer.viewmodel.LibraryUiState
 import org.junit.Assert.*
@@ -44,7 +57,7 @@ class EkoScreensTest {
         }
         val state = LibraryUiState(starting = false, folder = MusicFolder("content://test/tree", "Mi colección"), songs = songs, totalSongs = songs.size)
         compose.setContent { EkoTheme { Surface { LibraryScreen(state, { query = it }, {}, {}, {}, {},
-            { selected = it }, {}, null, true) } } }
+            { _, song -> selected = song }, {}, null, true) } } }
         compose.onNodeWithText("Canción, artista o álbum").performTextInput("órbita")
         assertEquals("órbita", query)
         compose.onNodeWithText("Órbita").performClick()
@@ -52,10 +65,52 @@ class EkoScreensTest {
         capture("library")
     }
 
+    @Test fun libraryShowsAlbumsAndTheirTracks() {
+        val songs = listOf(
+            Song("1", Uri.parse("content://test/1"), "Primera luz", "Aurora", "Noches", 180000,
+                null, "2026", 1, "1.flac"),
+            Song("2", Uri.parse("content://test/2"), "Última luz", "Aurora", "Noches", 210000,
+                null, "2026", 2, "2.flac"),
+            Song("3", Uri.parse("content://test/3"), "Marea", "Bruma", "Costa", 190000,
+                null, null, 1, "3.flac"),
+        )
+        val state = LibraryUiState(
+            starting = false,
+            folder = MusicFolder("content://test/tree", "Mi colección"),
+            songs = songs,
+            catalogSongs = songs,
+            totalSongs = songs.size,
+        )
+        var played: Song? = null
+        lateinit var activity: ComponentActivity
+        compose.setContent { EkoTheme { Surface {
+            activity = checkNotNull(LocalActivity.current) as ComponentActivity
+            LibraryScreen(state, {}, {}, {}, {}, {}, { _, song -> played = song }, {}, null, true)
+        } } }
+
+        compose.onNodeWithText("Álbumes").performClick()
+        compose.onNodeWithText("Todos tus discos").assertIsDisplayed()
+        capture("library-albums")
+        repeat(2) {
+            compose.onNodeWithText("Noches").performClick()
+            compose.onNodeWithText("Todos los álbumes").assertIsDisplayed().performClick()
+            compose.onNodeWithText("Todos tus discos").assertIsDisplayed()
+        }
+        capture("library-albums-after-reentry")
+        compose.onNodeWithText("Noches").performClick()
+        compose.onNodeWithText("Todos los álbumes").assertIsDisplayed()
+        compose.onNodeWithText("Primera luz").performClick()
+        assertEquals("Primera luz", played?.title)
+        capture("library-album-detail")
+        compose.runOnUiThread { activity.onBackPressedDispatcher.onBackPressed() }
+        compose.waitForIdle()
+        compose.onNodeWithText("Todos tus discos").assertIsDisplayed()
+    }
+
     @Test fun revokedPermissionOffersRecovery() {
         var selected = false
         val state = LibraryUiState(starting = false, folder = MusicFolder("content://test/tree", "Música"), accessError = true)
-        compose.setContent { EkoTheme { Surface { LibraryScreen(state, {}, {}, { selected = true }, {}, {}, {}, {}, null, true) } } }
+        compose.setContent { EkoTheme { Surface { LibraryScreen(state, {}, {}, { selected = true }, {}, {}, { _, _ -> }, {}, null, true) } } }
         compose.onNodeWithText("Seleccionar carpeta").performScrollTo().performClick()
         assertTrue(selected)
         capture("access-error")
@@ -65,7 +120,7 @@ class EkoScreensTest {
         var cancelled = false
         val state = LibraryUiState(starting = false, folder = MusicFolder("content://test/tree", "Música"), scanning = true,
             progress = ScanProgress(40, 12, 1))
-        compose.setContent { EkoTheme { Surface { LibraryScreen(state, {}, {}, {}, {}, { cancelled = true }, {}, {}, null, true) } } }
+        compose.setContent { EkoTheme { Surface { LibraryScreen(state, {}, {}, {}, {}, { cancelled = true }, { _, _ -> }, {}, null, true) } } }
         compose.onNodeWithText("Cancelar").performScrollTo().performClick()
         assertTrue(cancelled)
     }
@@ -105,6 +160,58 @@ class EkoScreensTest {
         capture("player")
     }
 
+    @Test @Config(qualifiers = "w360dp-h640dp-mdpi")
+    fun glassMiniPlayerFloatsAndExposesPlaybackActions() {
+        val current = Song("1", Uri.parse("content://test/1"), "Celestial Drift", "Aether Echo",
+            "Horizonte", 236000, null, null, null, "celestial.flac")
+        val nextSong = Song("2", Uri.parse("content://test/2"), "Órbita", "Aurora",
+            "Horizonte", 198000, null, null, null, "orbita.flac")
+        val state = PlaybackState(
+            connected = true,
+            currentSong = current,
+            isPlaying = true,
+            position = 105000,
+            duration = current.duration,
+            nextSong = nextSong,
+            queue = listOf(current, nextSong),
+            currentIndex = 0,
+        )
+        var opened = 0
+        var toggled = 0
+        var previous = 0
+        var next = 0
+        compose.setContent {
+            EkoTheme {
+                Box(
+                    Modifier.fillMaxSize().background(
+                        Brush.verticalGradient(
+                            listOf(EkoBlue.copy(alpha = .16f), EkoBackground, EkoGreen.copy(alpha = .10f)),
+                        ),
+                    ),
+                    contentAlignment = Alignment.BottomCenter,
+                ) {
+                    MiniPlayer(
+                        state = state,
+                        onOpen = { opened++ },
+                        onToggle = { toggled++ },
+                        onPrevious = { previous++ },
+                        onNext = { next++ },
+                        reducedMotion = true,
+                    )
+                }
+            }
+        }
+        compose.onNodeWithText("Celestial Drift").performClick()
+        compose.onNodeWithContentDescription("Pausar").performClick()
+        compose.onNodeWithContentDescription("Anterior").performClick()
+        compose.onNodeWithContentDescription("Siguiente").performClick()
+        assertEquals(1, opened)
+        assertEquals(1, toggled)
+        assertEquals(1, previous)
+        assertEquals(1, next)
+        capture("mini-player-glass")
+    }
+
     @Test @Config(qualifiers = "w900dp-h600dp-mdpi")
     fun playerAdaptsToWideScreens() {
         val song = Song("1", Uri.parse("content://test/1"), "Donde empieza el mar", "EKO Test",
@@ -126,6 +233,41 @@ class EkoScreensTest {
         compose.onNodeWithContentDescription("Reproducir").assertIsDisplayed()
         compose.onNodeWithContentDescription("Siguiente").assertIsDisplayed()
         capture("player-compact")
+    }
+
+    @Test fun homeWithoutHistoryInvitesToStartListening() {
+        var opened = false
+        val songs = listOf(Song("0", Uri.parse("content://test/0"), "Órbita", "Érika", "Noches", 180000, null, null, null, "0.flac"))
+        val state = LibraryUiState(starting = false, folder = MusicFolder("content://test/tree", "Mi colección"),
+            songs = songs, totalSongs = songs.size)
+        compose.setContent { EkoTheme { Surface {
+            HomeScreen(state, null, true, { _, _ -> }, { opened = true })
+        } } }
+        compose.onNodeWithText("Aún sin estadísticas").assertIsDisplayed()
+        compose.onNodeWithText("Ir a la biblioteca").performScrollTo().performClick()
+        assertTrue(opened)
+        capture("home-empty")
+    }
+
+    @Test fun homeShowsUsageStatsAndRecommendationPlays() {
+        val songs = listOf("Órbita", "Amanecer", "Brisa").mapIndexed { i, title ->
+            Song("$i", Uri.parse("content://test/$i"), title, "Artista ${i + 1}", "Álbum", 180000L + i, null, null, null, "$i.flac")
+        }
+        val plays = mapOf("0" to PlayRecord(9, 100), "1" to PlayRecord(4, 50), "2" to PlayRecord(1, 10))
+        val state = LibraryUiState(starting = false, folder = MusicFolder("content://test/tree", "Mi colección"),
+            songs = songs, totalSongs = songs.size, insights = ListeningInsights.build(songs, plays))
+        var queue: List<Song>? = null
+        var selected: Song? = null
+        compose.setContent { EkoTheme { Surface {
+            HomeScreen(state, null, true, { q, s -> queue = q; selected = s }, {})
+        } } }
+        compose.onNodeWithText("ESTADÍSTICAS DE USO").assertIsDisplayed()
+        compose.onNodeWithText("LO MÁS ESCUCHADO").assertIsDisplayed()
+        compose.onNodeWithText("TOP 10 MÁS USADAS").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Reproducir recomendación").performScrollTo().performClick()
+        assertEquals(3, queue?.size)
+        assertEquals("Órbita", selected?.title)
+        capture("home-insights")
     }
 
     private fun capture(name: String) {

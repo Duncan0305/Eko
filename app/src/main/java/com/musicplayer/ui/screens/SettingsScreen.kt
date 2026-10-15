@@ -7,14 +7,20 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.musicplayer.ui.components.*
 import com.musicplayer.viewmodel.LibraryUiState
 
 @Composable
-fun SettingsScreen(state: LibraryUiState, onChangeFolder: () -> Unit) {
+fun SettingsScreen(
+    state: LibraryUiState,
+    onChangeFolder: () -> Unit,
+    bottomContentPadding: Dp = 32.dp,
+) {
     Box(Modifier.fillMaxSize().safeDrawingPadding(), contentAlignment = Alignment.TopCenter) {
-        Column(Modifier.widthIn(max = 720.dp).fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
+        Column(Modifier.widthIn(max = 720.dp).fillMaxSize().verticalScroll(rememberScrollState())
+            .padding(start = 24.dp, top = 24.dp, end = 24.dp, bottom = bottomContentPadding),
             verticalArrangement = Arrangement.spacedBy(24.dp)) {
             BrandHeader()
             Text("AJUSTES", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)

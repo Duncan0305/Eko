@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.musicplayer.data.model.*
 import com.musicplayer.data.repository.MusicRepository
 import com.musicplayer.domain.LibraryOrganizer
+import com.musicplayer.domain.ListeningInsights
 import com.musicplayer.scanner.FolderAccessException
 import com.musicplayer.scanner.ScanProgress
 import kotlinx.coroutines.*
@@ -16,6 +17,7 @@ data class LibraryUiState(
     val starting: Boolean = true,
     val folder: MusicFolder? = null,
     val songs: List<Song> = emptyList(),
+    val catalogSongs: List<Song> = emptyList(),
     val totalSongs: Int = 0,
     val query: String = "",
     val sort: SongSort = SongSort.TITLE,
@@ -24,6 +26,7 @@ data class LibraryUiState(
     val progress: ScanProgress = ScanProgress(),
     val accessError: Boolean = false,
     val message: String? = null,
+    val insights: ListeningInsights = ListeningInsights(),
 )
 
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
@@ -42,9 +45,13 @@ class LibraryViewModel(private val repository: MusicRepository) : ViewModel() {
         withContext(Dispatchers.Default) { LibraryOrganizer.organize(songs, text, order) }
     }
 
-    val uiState = combine(status, results, query, sort) { state, songs, text, order ->
+    private val insights = combine(allSongs, repository.playStats()) { songs, plays ->
+        withContext(Dispatchers.Default) { ListeningInsights.build(songs, plays) }
+    }
+
+    val uiState = combine(status, results, query, sort, insights) { state, songs, text, order, usage ->
         state.copy(songs = if (state.accessError) emptyList() else songs,
-            query = text, sort = order)
+            query = text, sort = order, insights = usage)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LibraryUiState())
 
     init {
@@ -53,7 +60,8 @@ class LibraryViewModel(private val repository: MusicRepository) : ViewModel() {
                 repository.prepare()
                 repository.folder.collectLatest { folder ->
                     allSongs.value = emptyList()
-                    status.update { it.copy(starting = false, folder = folder, totalSongs = 0, accessError = false) }
+                    status.update { it.copy(starting = false, folder = folder, totalSongs = 0,
+                        catalogSongs = emptyList(), accessError = false) }
                     if (folder != null) {
                         if (!repository.canAccess(folder)) {
                             status.update { it.copy(accessError = true) }
@@ -65,7 +73,7 @@ class LibraryViewModel(private val repository: MusicRepository) : ViewModel() {
                         // Keep observing even after revocation, so regranting the same URI resumes normally.
                         repository.songs(folder).collect { songs ->
                             allSongs.value = songs
-                            status.update { it.copy(totalSongs = songs.size) }
+                            status.update { it.copy(totalSongs = songs.size, catalogSongs = songs) }
                         }
                     }
                 }

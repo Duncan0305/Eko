@@ -7,6 +7,7 @@ import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import com.musicplayer.data.local.*
 import com.musicplayer.data.model.MusicFolder
+import com.musicplayer.data.model.PlayRecord
 import com.musicplayer.scanner.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.map
@@ -22,6 +23,14 @@ class MusicRepository(
     val folder = preferences.folder
     fun songs(folder: MusicFolder) = dao.observeSongs(folder.uri).map { rows -> rows.map { it.toSong() } }
     suspend fun hasIndex(folder: MusicFolder) = dao.index(folder.uri) != null
+
+    /** Historial de reproducciones por `uri`, reactivo a cada nueva escucha. */
+    fun playStats() = dao.observePlayStats()
+        .map { rows -> rows.associate { it.uri to PlayRecord(it.playCount, it.lastPlayedAt) } }
+
+    suspend fun recordPlay(uri: String) = withContext(Dispatchers.IO) {
+        dao.recordPlay(uri, System.currentTimeMillis())
+    }
 
     suspend fun prepare() = withContext(Dispatchers.IO) {
         dao.cleanUncommitted()

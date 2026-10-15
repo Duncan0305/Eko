@@ -52,4 +52,14 @@ class MusicDatabaseTest {
         assertNull(dao.index("folder"))
         assertTrue(dao.observeSongs("folder").first().isEmpty())
     }
+
+    @Test fun playStatsAccumulateAndEmitReactively() = runTest {
+        dao.recordPlay("song", 10)
+        dao.recordPlay("song", 20)
+        dao.recordPlay("other", 30)
+        val stats = dao.observePlayStats().first().associateBy { it.uri }
+        assertEquals(2, stats.getValue("song").playCount)
+        assertEquals(20, stats.getValue("song").lastPlayedAt)
+        assertEquals(1, stats.getValue("other").playCount)
+    }
 }

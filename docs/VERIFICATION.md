@@ -30,7 +30,7 @@ Ejecutado en limpio desde la raíz del proyecto:
 |---|---|
 | `:app:assembleDebug` | ✅ BUILD SUCCESSFUL — APK `app/build/outputs/apk/debug/app-debug.apk` |
 | `:app:lintDebug` | ✅ BUILD SUCCESSFUL — sin errores (con `lint { abortOnError = true }`) |
-| `:app:testDebugUnitTest` | ✅ 29 tests, 0 fallos |
+| `:app:testDebugUnitTest` | ✅ 43 tests, 0 fallos |
 
 Reporte de lint: `app/build/reports/lint-results-debug.html`.
 
@@ -39,13 +39,15 @@ Reporte de lint: `app/build/reports/lint-results-debug.html`.
 | Suite | Tests | Fallos | Cubre |
 |---|---|---|---|
 | `MetadataMapperTest` | 5 | 0 | Transformación de metadatos y valores de respaldo |
-| `LibraryOrganizerTest` | 3 | 0 | Filtrado, búsqueda y ordenamiento |
+| `LibraryOrganizerTest` | 4 | 0 | Filtrado, búsqueda, ordenamiento y agrupación de álbumes |
+| `ListeningInsightsTest` | 7 | 0 | Estadísticas, ranking y recomendaciones locales |
 | `MusicScannerTest` | 5 | 0 | Formatos admitidos, subcarpetas, duplicados y errores |
 | `MusicRepositoryTest` | 2 | 0 | Permisos/índice |
-| `MusicDatabaseTest` | 3 | 0 | Índice Room |
-| `EkoScreensTest` | 9 | 0 | Estados de biblioteca y reproductor en móvil, compacto y horizontal |
+| `MusicDatabaseTest` | 4 | 0 | Índice Room y estadísticas de reproducción |
+| `MusicDatabaseMigrationTest` | 1 | 0 | Migración del índice y conservación de datos |
+| `EkoScreensTest` | 13 | 0 | Estados de inicio, álbumes, biblioteca, minirreproductor flotante y reproductor en móvil, compacto y horizontal |
 | `PlaybackMediaItemTest` | 2 | 0 | Conservación y valores de respaldo de metadatos de sesión |
-| **Total** | **29** | **0** | |
+| **Total** | **43** | **0** | |
 
 ## Estados verificados en dispositivo
 
@@ -84,7 +86,7 @@ Escenarios contemplados por el diseño y la implementación. Los marcados con �
 - ✅ Archivos sin metadatos (valores de respaldo).
 - ✅ Canciones sin carátula (imagen predeterminada).
 - ✅ Archivos dañados (omisión individual, sin detener el escaneo).
-- ✅ Bibliotecas grandes (LazyColumn, caché de carátulas).
+- ✅ Bibliotecas grandes (LazyVerticalGrid adaptable, caché de carátulas).
 - ✅ Búsqueda y ordenamiento (sin repetir el escaneo).
 - ✅ Funcionamiento offline.
 - ⬜ Eliminación de canciones entre escaneos (limpieza del índice al actualizar).
@@ -106,7 +108,7 @@ Escenarios contemplados por el diseño y la implementación. Los marcados con �
 - SAF no ofrece un observador universal fiable: los cambios de contenido se incorporan con **Actualizar biblioteca**; el permiso/directorio se comprueba también al volver a la app.
 - Las llamadas nativas de proveedores y `MediaMetadataRetriever` no siempre son interrumpibles: cancelar se hace efectivo al terminar la llamada en curso, sin bloquear la UI.
 - Si un directorio no puede enumerarse, se conserva el índice anterior para no confundir un fallo con una carpeta vacía.
-- Miniaturas de hasta 384 px, presupuesto ~96 MiB, limpieza de archivos sin referencias. Se descartan carátulas comprimidas > 16 MiB.
+- Carátulas en alta resolución (hasta 1280 px en el lado mayor, WebP ~92), presupuesto ~128 MiB, limpieza de archivos sin referencias. Se descartan carátulas comprimidas > 16 MiB. Las miniaturas de la lista las reduce Coil al dibujar.
 - No se midió FPS en hardware físico ni se garantiza compatibilidad con todos los proveedores SAF o códecs.
 - El APK **no contiene canciones de demostración**: las muestras y proveedores ficticios viven solo en los tests.
 - La posición se publica a la UI cada 500 ms solo mientras se reproduce. Media3 administra audio focus y la pausa al desconectar una salida de audio.

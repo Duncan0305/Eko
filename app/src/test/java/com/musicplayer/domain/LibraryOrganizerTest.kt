@@ -34,4 +34,19 @@ class LibraryOrganizerTest {
         assertEquals(500, LibraryOrganizer.organize(library, "seleccion", SongSort.TITLE).size)
         assertEquals(10000, LibraryOrganizer.organize(library, "   ", SongSort.TITLE).size)
     }
+
+    @Test fun groupsAlbumsByTitleAndArtistAndOrdersTheirTracks() {
+        val library = listOf(
+            song("1", "Final", artist = "Aurora", album = "Luz").copy(trackNumber = 2, year = "2025"),
+            song("2", "Inicio", artist = "Aurora", album = "Luz").copy(trackNumber = 1),
+            song("3", "Otra luz", artist = "Bruma", album = "Luz"),
+        )
+
+        val albums = LibraryOrganizer.albums(library)
+
+        assertEquals(2, albums.size)
+        assertEquals(listOf("2", "1"), albums.first { it.artist == "Aurora" }.songs.map { it.id })
+        assertEquals("2025", albums.first { it.artist == "Aurora" }.year)
+        assertEquals(listOf("Aurora", "Bruma"), albums.map { it.artist })
+    }
 }

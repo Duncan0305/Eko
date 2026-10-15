@@ -63,7 +63,7 @@ Navegación:
 - Rutas: `welcome` (sin carpeta), `home`, `library`, `settings`, `player`.
 - Destinos principales en la barra inferior: **Inicio** (`home`), **Biblioteca** (`library`), **Ajustes** (`settings`) — enum `MainDestination` en `EkoBottomNavigation.kt`.
 - La barra inferior es flotante y solo aparece en los destinos principales; el **minirreproductor** se apila encima cuando hay canción activa.
-- Dentro de Biblioteca, las secciones son un enum `LibrarySection` en `LibraryTabs.kt`: **Canciones, Álbumes, Artistas, Géneros, Carpetas**. Solo **Canciones** está implementada; el resto muestra `LibrarySectionPlaceholder` ("preparada para la siguiente etapa").
+- Dentro de Biblioteca, las secciones son un enum `LibrarySection` en `LibraryTabs.kt`: **Canciones, Álbumes, Artistas, Géneros, Carpetas**. **Canciones** y **Álbumes** están implementadas; el resto muestra `LibrarySectionPlaceholder` ("preparada para la siguiente etapa").
 
 Reglas de arquitectura:
 - **La UI no lee archivos.** Recibe estado + callbacks. Nada de acceso a disco en composables.

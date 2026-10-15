@@ -2,6 +2,8 @@ package com.musicplayer.data.local
 
 import androidx.core.net.toUri
 import androidx.room.*
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.musicplayer.data.model.Song
 import kotlinx.coroutines.flow.Flow
 
@@ -23,6 +25,14 @@ data class SongEntity(
 
 @Entity(tableName = "library_index")
 data class LibraryIndex(@PrimaryKey val folderUri: String, val generation: String, val updatedAt: Long)
+
+/** Estadística de uso de una canción. La clave es su `uri`, estable entre reescaneos. */
+@Entity(tableName = "play_stats")
+data class PlayStatEntity(
+    @PrimaryKey val uri: String,
+    val playCount: Int,
+    val lastPlayedAt: Long,
+)
 
 @Dao
 abstract class MusicDao {
@@ -50,6 +60,22 @@ abstract class MusicDao {
     @Query("SELECT DISTINCT artworkPath FROM songs WHERE artworkPath IS NOT NULL")
     abstract suspend fun artworkPaths(): List<String>
 
+    @Query("SELECT * FROM play_stats")
+    abstract fun observePlayStats(): Flow<List<PlayStatEntity>>
+
+    @Query("SELECT * FROM play_stats WHERE uri = :uri")
+    abstract suspend fun playStat(uri: String): PlayStatEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    abstract suspend fun putPlayStat(stat: PlayStatEntity)
+
+    /** Incrementa el contador de reproducciones de una canción de forma serializada. */
+    @Transaction
+    open suspend fun recordPlay(uri: String, timestamp: Long) {
+        val current = playStat(uri)?.playCount ?: 0
+        putPlayStat(PlayStatEntity(uri, current + 1, timestamp))
+    }
+
     @Transaction
     open suspend fun commit(index: LibraryIndex) {
         setIndex(index)
@@ -58,7 +84,20 @@ abstract class MusicDao {
     }
 }
 
-@Database(entities = [SongEntity::class, LibraryIndex::class], version = 1, exportSchema = true)
+@Database(entities = [SongEntity::class, LibraryIndex::class, PlayStatEntity::class], version = 2, exportSchema = true)
 abstract class MusicDatabase : RoomDatabase() {
     abstract fun musicDao(): MusicDao
+
+    companion object {
+        /** Añade la tabla de estadísticas de uso sin tocar el índice existente. */
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS play_stats (" +
+                        "uri TEXT NOT NULL, playCount INTEGER NOT NULL, lastPlayedAt INTEGER NOT NULL, " +
+                        "PRIMARY KEY(uri))",
+                )
+            }
+        }
+    }
 }

@@ -9,11 +9,15 @@ import com.musicplayer.scanner.*
 import com.musicplayer.playback.PlaybackController
 
 class EkoApplication : Application() {
-    val playbackController by lazy { PlaybackController(this) }
     val repository by lazy {
-        val database = Room.databaseBuilder(this, MusicDatabase::class.java, "eko-library.db").build()
+        val database = Room.databaseBuilder(this, MusicDatabase::class.java, "eko-library.db")
+            .addMigrations(MusicDatabase.MIGRATION_1_2)
+            .build()
         val artwork = ArtworkCache(this)
         MusicRepository(this, FolderPreferences(this), database.musicDao(),
             MusicScanner(this, MetadataExtractor(this, artwork)), artwork)
     }
+
+    /** Registra cada canción que empieza a sonar para alimentar las estadísticas de uso. */
+    val playbackController by lazy { PlaybackController(this) { uri -> repository.recordPlay(uri) } }
 }

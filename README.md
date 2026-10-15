@@ -30,17 +30,18 @@ En este equipo también quedó disponible el emulador **Eko_API_35** en Device M
 - Filtrado por MIME/extensión para MP3, FLAC, WAV, OGG, M4A, AAC y Opus. MediaMetadataRetriever valida que exista audio. El soporte efectivo depende de los códecs del dispositivo.
 - Título, artista, álbum, duración, género, año, pista, archivo y URI. Valores legibles de respaldo; archivos ilegibles omitidos individualmente.
 - Carátulas incrustadas reducidas y guardadas por hash, con Coil para carga y caché en memoria. Imagen de respaldo si faltan o no pueden decodificarse.
-- Biblioteca con LazyColumn, búsqueda por título/artista/álbum sin volver al almacenamiento, búsqueda insensible a acentos y mayúsculas, orden por título, duración o modificación descendente.
+- Biblioteca adaptable con vistas de Canciones y Álbumes. La cuadrícula de álbumes agrupa por disco y artista, abre sus pistas y usa su propia cola; la lista permite buscar por título/artista/álbum sin volver al almacenamiento y ordenar por título, duración o modificación descendente.
 - Progreso con archivos revisados y canciones encontradas, cancelación, actualización manual, información de canción y ajustes de carpeta.
 - Estados sin carpeta, vacío, escaneando, sin coincidencias y acceso perdido; transiciones breves y movimiento reducido según Android.
 - Índice Room persistente. Cada escaneo escribe lotes de hasta 50 filas en una generación temporal. Solo se publica al completar la exploración: cancelar o fallar conserva el índice anterior. Una actualización exitosa elimina referencias a archivos borrados.
 - Un único ExoPlayer alojado en `MediaSessionService`, separado de la UI y sincronizado mediante `MediaController` + `StateFlow`.
 - Reproducción, pausa, búsqueda temporal, anterior, siguiente, cola, modo aleatorio, repetir una y repetir todo.
 - Minirreproductor persistente dentro de la navegación y reproductor completo adaptable, con cola consultable y carátula protagonista.
+- Pantalla de Inicio con estadísticas de uso: reproducciones acumuladas, canciones escuchadas, artista y género más escuchados, lo más escuchado, un top 10 y una recomendación de playlist derivada de tu artista o género favorito. Cada contador se guarda por `uri` y sobrevive a los reescaneos y cambios de carpeta.
 - Reproducción en segundo plano, audio focus, pausa al desconectar la salida de audio y controles de notificación, pantalla bloqueada, auriculares y Bluetooth compatibles.
 - Recuperación por archivo ilegible: se informa el error y, si hay otra pista disponible, la cola continúa.
 
-No se solicitan permisos de almacenamiento global, audio multimedia ni internet. Android 13 o posterior solicita notificaciones al iniciar la primera reproducción; rechazarlo no bloquea el audio. No hay servidores, cuentas, streaming, favoritos ni playlists personalizadas.
+No se solicitan permisos de almacenamiento global, audio multimedia ni internet. Android 13 o posterior solicita notificaciones al iniciar la primera reproducción; rechazarlo no bloquea el audio. No hay servidores, cuentas, streaming, favoritos ni listas de reproducción creadas o guardadas por el usuario.
 
 ## Estructura y responsabilidades
 
@@ -49,17 +50,17 @@ app/src/main/java/com/musicplayer/
 ├── MainActivity.kt               Selector SAF y ciclo de vida
 ├── EkoApplication.kt             Construcción de dependencias
 ├── data/
-│   ├── model/Song.kt             Canción, carpeta y orden
-│   ├── local/                    DataStore, Room y transacción del índice
-│   └── repository/               Permisos, escaneo e índice
-├── domain/                      Metadatos, formatos, búsqueda y orden
+│   ├── model/Song.kt             Canción, carpeta, orden e historial de reproducción
+│   ├── local/                    DataStore, Room (índice y estadísticas) y transacción del índice
+│   └── repository/               Permisos, escaneo, índice y registro de reproducciones
+├── domain/                      Metadatos, formatos, búsqueda, orden y estadísticas de uso
 ├── scanner/                     Exploración, MediaMetadataRetriever y miniaturas
 ├── playback/                    ExoPlayer, MediaSessionService, controlador y estado
 ├── viewmodel/                   Estado StateFlow y operaciones cancelables
 └── ui/
     ├── theme/                   Color.kt, Theme.kt, Type.kt, Motion.kt
-    ├── components/              Marca, iconos, filas, minirreproductor y controles
-    ├── screens/                 Bienvenida, biblioteca, reproductor, ajustes e información
+    ├── components/              Marca, iconos, filas, minirreproductor, controles y estadísticas
+    ├── screens/                 Bienvenida, inicio, biblioteca, reproductor, ajustes e información
     └── navigation/              Navigation Compose
 ```
 
@@ -86,7 +87,9 @@ Consulta `docs/VERIFICATION.md` para resultados, capturas y matriz de pruebas. L
 - SAF no ofrece un observador universal fiable. Los cambios de contenido se incorporan con **Actualizar biblioteca**; el permiso/directorio se comprueba también al volver a la app.
 - Las llamadas nativas de proveedores y MediaMetadataRetriever no siempre son interrumpibles. Cancelar se hace efectivo al terminar la llamada en curso, sin bloquear la UI.
 - Si un directorio no puede enumerarse, se conserva el índice anterior para no confundir un fallo con una carpeta vacía.
-- Miniaturas de hasta 384 px, presupuesto de aproximadamente 96 MiB y limpieza de archivos sin referencias. Se descartan carátulas comprimidas mayores de 16 MiB; MediaMetadataRetriever puede asignar transitoriamente el bloque incrustado antes de conocer su tamaño.
+- Carátulas guardadas en alta resolución (hasta 1280 px en el lado mayor, WebP ~92) para que el reproductor, el fondo a pantalla completa y la notificación del sistema se vean nítidos; las miniaturas de la lista las reduce Coil al dibujarlas. Presupuesto de aproximadamente 128 MiB y limpieza de archivos sin referencias. Se descartan carátulas comprimidas mayores de 16 MiB; MediaMetadataRetriever puede asignar transitoriamente el bloque incrustado antes de conocer su tamaño.
+- Las estadísticas de uso viven en la tabla Room `play_stats`, con `uri` como clave, separada de las generaciones del índice. La migración 1 → 2 es aditiva (crea la tabla sin tocar canciones ni índice) y se comprobó sobre una instalación real con más de mil pistas: el índice se conserva y los contadores empiezan en cero.
+- Una reproducción se cuenta cuando una canción empieza a sonar (inicio manual, avance automático o cambio de pista) y no al reanudar la misma pista. Reconectar con un servicio que ya está sonando no infla el contador.
 - No se ha medido FPS en hardware físico ni se garantiza compatibilidad con todos los proveedores SAF o códecs.
 - El servicio conserva la sesión durante la reproducción y las pausas recientes. Una detención forzada de la app por el usuario borra la sesión activa; no se implementó reanudación automática tras *force stop*.
 - Las llamadas, controles Bluetooth/auriculares y sesiones de muchas horas dependen de hardware real y deben verificarse en los dispositivos objetivo.

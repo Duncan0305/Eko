@@ -15,7 +15,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /** Único puente de la UI hacia el reproductor que vive en [PlaybackService]. */
-class PlaybackController(context: Context) {
+class PlaybackController(
+    context: Context,
+    /** Se invoca una vez por cada canción que empieza a sonar, para alimentar las estadísticas de uso. */
+    private val onSongStarted: (suspend (String) -> Unit)? = null,
+) {
     private val appContext = context.applicationContext
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val mutableState = MutableStateFlow(PlaybackState())
@@ -24,6 +28,8 @@ class PlaybackController(context: Context) {
     private var controller: MediaController? = null
     private var positionJob: Job? = null
     private var pendingPlayback: Pair<List<Song>, Song>? = null
+    private var recordedSongId: String? = null
+    private var primed = false
     private val controllerFuture = MediaController.Builder(
         appContext,
         SessionToken(appContext, ComponentName(appContext, PlaybackService::class.java)),
@@ -152,7 +158,27 @@ class PlaybackController(context: Context) {
             },
             shuffleEnabled = player.shuffleModeEnabled,
         )
+        trackPlayback()
         restartPositionUpdates()
+    }
+
+    /**
+     * Registra una reproducción cuando empieza a sonar una canción distinta. La primera lectura
+     * solo prepara el estado: reconectar con algo ya sonando no debe inflar el contador.
+     */
+    private fun trackPlayback() {
+        val state = mutableState.value
+        val song = state.currentSong
+        if (!primed) {
+            primed = true
+            recordedSongId = if (state.isPlaying) song?.id else null
+            return
+        }
+        if (song == null) { recordedSongId = null; return }
+        if (!state.isPlaying || song.id == recordedSongId) return
+        recordedSongId = song.id
+        val recorder = onSongStarted ?: return
+        scope.launch { recorder(song.uri.toString()) }
     }
 
     private fun safeDuration(player: Player): Long {
